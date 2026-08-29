@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PROTOTYPE — четыре экрана Справочника</title>
+  <!--
+    Three variants of the four Directory surfaces (search+list, препарат, «О программе», пусто/офлайн),
+    switchable via ?variant= and ?scene=, throwaway route prototype/four-screens.
+    A Плакат — editorial, search-as-hero, sparse list. B Карман — thumb-zone dock, dense index, sheet.
+    C Витрина — photo mosaic, search secondary, immersive detail.
+  -->
+  <style>
+    :root {
+      --brand: #ff5959;
+      --ink: #171717;
+      --paper: #fff;
+      --label-red: #e10600;
+      --label-orange: #f5a000;
+      --chrome: #111;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: #d8d2cc;
+      color: var(--ink);
+    }
+
+    .stage {
+      min-height: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 20px;
+    }
+    .phone {
+      width: min(390px, 100%);
+      height: min(780px, calc(100vh - 148px));
+      min-height: 480px;
+      background: #000;
+      border-radius: 28px;
+      padding: 10px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    }
+    .app {
+      height: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: var(--paper);
+    }
+    .screen { height: 100%; overflow: auto; }
+
+    /* —— Prototype chrome (not part of the design) —— */
+    .proto {
+      position: static;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      width: min(390px, 100%);
+      padding-top: 4px;
+    }
+    .proto-state {
+      font: 11px/1.3 ui-monospace, monospace;
+      color: #fff;
+      background: #000;
+      padding: 4px 10px;
+      border-radius: 6px;
+      opacity: .85;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .proto-scenes {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+    }
+    .proto-scenes button {
+      font: 11px/1 ui-sans-serif, system-ui, sans-serif;
+      border: 0;
+      background: #2a2a2a;
+      color: #eee;
+      padding: 6px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .proto-scenes button[aria-current="true"] { background: #fff; color: #000; }
+    .switcher {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #111;
+      color: #fff;
+      border-radius: 999px;
+      padding: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+    .switcher button {
+      width: 40px; height: 40px;
+      border: 0; border-radius: 50%;
+      background: #fff; color: #111;
+      font-size: 18px; cursor: pointer;
+    }
+    .switcher .label {
+      min-width: 168px;
+      text-align: center;
+      font: 13px/1.2 ui-sans-serif, system-ui, sans-serif;
+      padding: 0 8px;
+    }
+
+    .hidden { display: none !important; }
+    button { font: inherit; }
+    a { color: inherit; }
+
+    /* ================= A Плакат ================= */
+    [data-variant="A"] .app { background: #f7f1e8; color: #1a120c; }
+    .a-top {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 28px 24px 0;
+    }
+    .a-brand {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 13px; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--brand); margin: 0;
+    }
+    .a-info {
+      background: none; border: 0; padding: 0;
+      font-family: Georgia, serif; font-size: 15px;
+      text-decoration: underline; text-underline-offset: 3px;
+      color: #1a120c; cursor: pointer;
+    }
+    .a-offline {
+      margin: 8px 24px 0;
+      font: 12px/1.4 Georgia, serif;
+      color: #7a6456;
+    }
+    .a-hero { padding: 28px 24px 12px; }
+    .a-hero h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 400; font-size: 34px; line-height: 1.15;
+      margin: 0 0 20px;
+    }
+    .a-search {
+      width: 100%; border: 0; border-bottom: 2px solid #1a120c;
+      background: transparent; font: 18px/1.4 Georgia, serif;
+      padding: 8px 0; outline: none; color: inherit;
+    }
+    .a-list { padding: 8px 0 40px; }
+    .a-row {
+      display: block; width: 100%; text-align: left;
+      background: none; border: 0; border-left: 6px solid var(--stripe);
+      padding: 16px 24px 16px 18px; cursor: pointer;
+    }
+    .a-row .t { display: block; font: 26px/1.15 Georgia, serif; }
+    .a-row .s { display: block; margin-top: 4px; font-size: 13px; color: #7a6456; }
+    .a-empty {
+      padding: 48px 24px;
+      font: 28px/1.25 Georgia, serif;
+    }
+    .a-back {
+      background: none; border: 0; padding: 0;
+      font: 14px Georgia, serif; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+    .a-drug { padding: 24px 24px 48px; }
+    .a-stamp {
+      display: inline-block; margin: 16px 0;
+      padding: 6px 10px; border: 2px solid var(--stamp);
+      color: var(--stamp); font: 11px/1 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .14em; text-transform: uppercase;
+      transform: rotate(-3deg);
+    }
+    .a-drug h1 { font: 36px/1.1 Georgia, serif; font-weight: 400; margin: 8px 0 6px; }
+    .a-syn { color: #7a6456; font: 14px/1.4 Georgia, serif; margin: 0 0 16px; }
+    .a-photo {
+      float: right; width: 110px; height: 110px; object-fit: contain;
+      background: #fff; margin: 0 0 12px 16px;
+      box-shadow: 4px 4px 0 #1a120c;
+    }
+    .a-lead { font: 18px/1.45 Georgia, serif; margin: 0 0 16px; }
+    .a-verdict {
+      clear: both; margin: 20px 0;
+      padding: 16px 0; border-top: 1px solid #1a120c; border-bottom: 1px solid #1a120c;
+      font: italic 22px/1.3 Georgia, serif;
+    }
+    .a-source { font-size: 13px; }
+    .a-about { padding: 32px 28px 48px; text-align: center; }
+    .a-about h1 { font: 32px/1.2 Georgia, serif; font-weight: 400; }
+    .a-about p { font: 16px/1.55 Georgia, serif; }
+    .a-about ul { list-style: none; padding: 0; text-align: left; }
+    .a-about li { margin: 10px 0; padding-left: 12px; border-left: 4px solid var(--stripe, var(--brand)); }
+
+    /* ================= B Карман ================= */
+    [data-variant="B"] .app { background: #161012; color: #f4ecea; }
+    .b-shell { display: flex; flex-direction: column; height: 100%; }
+    .b-head {
+      padding: 18px 16px 8px;
+      font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--brand);
+    }
+    .b-offline {
+      margin: 0 16px 8px; padding: 8px 10px;
+      background: #3a2a12; color: #ffd27a; font-size: 12px; border-radius: 8px;
+    }
+    .b-list { flex: 1; overflow: auto; padding-bottom: 8px; }
+    .b-row {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; background: none; border: 0; border-bottom: 1px solid #2a2022;
+      color: inherit; text-align: left; padding: 12px 16px; cursor: pointer;
+    }
+    .b-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--dot); flex: none; }
+    .b-row .t { font-size: 16px; }
+    .b-row .s { font-size: 12px; color: #a89894; margin-top: 2px; }
+    .b-empty { padding: 32px 16px; color: #a89894; font-size: 15px; }
+    .b-dock {
+      flex: none; display: flex; gap: 8px; align-items: center;
+      padding: 10px 12px 16px; background: #22181a;
+      border-top: 1px solid #3a2c2e;
+    }
+    .b-dock input {
+      flex: 1; border: 0; border-radius: 999px;
+      background: #2e2224; color: #fff; padding: 12px 16px; outline: none;
+    }
+    .b-dock .info {
+      width: 44px; height: 44px; border: 0; border-radius: 50%;
+      background: var(--brand); color: #fff; cursor: pointer; font-size: 16px;
+    }
+    .b-sheet {
+      position: absolute; inset: 12% 0 0; background: #1e1618;
+      border-radius: 20px 20px 0 0; overflow: auto;
+      box-shadow: 0 -12px 40px rgba(0,0,0,.45);
+    }
+    .b-handle { width: 40px; height: 4px; background: #5a4a4c; border-radius: 4px; margin: 10px auto; }
+    .b-sheet-top { display: flex; gap: 12px; padding: 8px 16px 16px; }
+    .b-sheet img { width: 88px; height: 88px; object-fit: cover; background: #2a181a; border-radius: 8px; }
+    .b-ph { width: 88px; height: 88px; border-radius: 8px; background: #3a2224; }
+    .b-cat { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--stamp); }
+    .b-sheet h1 { font-size: 22px; margin: 4px 0; font-weight: 650; }
+    .b-sheet .s { color: #a89894; font-size: 13px; }
+    .b-close {
+      margin-left: auto; align-self: flex-start;
+      background: none; border: 0; color: #a89894; font-size: 20px; cursor: pointer;
+    }
+    .b-verdict {
+      margin: 0 16px 16px; padding: 14px;
+      background: #2a181a; border-left: 4px solid var(--brand);
+      font-size: 16px; line-height: 1.4;
+    }
+    .b-body { padding: 0 16px 32px; color: #d8ccc8; font-size: 15px; line-height: 1.5; }
+    .b-about { padding: 20px 16px 32px; }
+    .b-about h1 { font-size: 24px; margin: 0 0 12px; }
+    .b-about p, .b-about li { color: #d8ccc8; line-height: 1.5; }
+    .b-pill {
+      display: inline-block; margin: 8px 8px 0 0; padding: 8px 12px;
+      background: var(--brand); color: #fff; border-radius: 999px;
+      text-decoration: none; font-size: 13px;
+    }
+
+    /* ================= C Витрина ================= */
+    [data-variant="C"] .app { background: #fff; }
+    .c-search-wrap {
+      position: sticky; top: 0; z-index: 2;
+      padding: 12px 12px 8px; background: linear-gradient(#fff, #fff 70%, transparent);
+    }
+    .c-search {
+      width: 100%; border: 2px solid var(--ink); border-radius: 16px;
+      padding: 12px 14px; font-size: 16px; outline: none;
+    }
+    .c-banner {
+      margin: 0 12px 8px; padding: 8px 12px;
+      background: #111; color: #fff; font-size: 12px; border-radius: 8px;
+    }
+    .c-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      padding: 8px 12px 24px;
+    }
+    .c-tile {
+      position: relative; aspect-ratio: 1; border: 0; padding: 0;
+      overflow: hidden; cursor: pointer; background: #eee;
+    }
+    .c-tile img { width: 100%; height: 100%; object-fit: cover; }
+    .c-tile .ph {
+      width: 100%; height: 100%;
+      display: grid; place-items: center;
+      background: var(--tile); color: #fff;
+      font-size: 18px; font-weight: 700; padding: 12px; text-align: center;
+    }
+    .c-tile .cap {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 28px 8px 8px;
+      background: linear-gradient(transparent, rgba(0,0,0,.75));
+      color: #fff; font-size: 13px; font-weight: 650; text-align: left;
+    }
+    .c-about-tile {
+      background: var(--brand); color: #fff;
+      display: grid; place-items: center;
+      font-size: 16px; font-weight: 700; text-align: center; padding: 12px;
+    }
+    .c-empty-tile {
+      border: 2px dashed #ccc; background: #fafafa; color: #999;
+      display: grid; place-items: center; font-size: 13px;
+    }
+    .c-immersive { height: 100%; overflow: auto; }
+    .c-hero {
+      position: relative; height: 46%; min-height: 220px; background: #111;
+    }
+    .c-hero img { width: 100%; height: 100%; object-fit: contain; background: #111; }
+    .c-hero .ph { height: 100%; display: grid; place-items: end start; padding: 16px; color: #fff; }
+    .c-chip {
+      position: absolute; top: 12px; left: 12px;
+      background: #fff; border: 0; border-radius: 999px;
+      padding: 8px 12px; cursor: pointer; font-size: 13px;
+    }
+    .c-body { padding: 16px 16px 40px; }
+    .c-tag { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--stamp); }
+    .c-body h1 { font-size: 28px; margin: 4px 0 6px; letter-spacing: -.02em; }
+    .c-syn { color: #666; margin: 0 0 12px; }
+    .c-verdict {
+      background: var(--brand); color: #fff;
+      padding: 14px 16px; margin: 0 -16px 16px;
+      font-size: 17px; line-height: 1.35;
+    }
+    .c-about { padding: 20px 16px 40px; }
+    .c-about h1 { font-size: 28px; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="phone"><div class="app" id="app"></div></div>
+  </div>
+
+  <div class="proto">
+    <div class="proto-state" id="state"></div>
+    <div class="proto-scenes" id="scenes"></div>
+    <div class="switcher">
+      <button type="button" id="prev" aria-label="Предыдущий вариант">←</button>
+      <div class="label" id="vlabel"></div>
+      <button type="button" id="next" aria-label="Следующий вариант">→</button>
+    </div>
+  </div>
+
+  <script>
+    // PROTOTYPE, throwaway. Not production.
+    const VARIANTS = [
+      { key: 'A', name: 'Плакат' },
+      { key: 'B', name: 'Карман' },
+      { key: 'C', name: 'Витрина' },
+    ];
+    const SCENES = [
+      { key: 'list', name: 'Список' },
+      { key: 'empty', name: 'Пусто' },
+      { key: 'offline', name: 'Офлайн' },
+      { key: 'drug', name: 'Препарат' },
+      { key: 'about', name: 'О программе' },
+    ];
+    const DRUGS = [
+      { id: 'anaferon', title: 'Анаферон', synonyms: 'Анаферон детский, Anaferon', category: 'Гомеопатия', label: 'red', photo: 'img/anaferon.png', verdict: 'Потому что действующего вещества в таблетках нет.', lead: 'Гомеопатический пингвин компании «Материа Медика». В таблетке нет ни одной молекулы заявленных антител.' },
+      { id: 'aflubin', title: 'Афлубин', synonyms: 'Aflubin', category: 'Гомеопатия', label: 'red', photo: 'img/homeopathy-aflubin.png', verdict: 'Потому что гомеопатия не помогает ни от чего.', lead: 'Гомеопатический «противовирусный».' },
+      { id: 'arbidol', title: 'Арбидол', synonyms: 'Умифеновир, Arbidol', category: 'РСП', label: 'orange', photo: 'img/arbidol.jpg', verdict: 'Ни одного качественного исследования, на котором можно строить выводы.', lead: 'ВОЗ отказалась признавать эффективность умифеновира. Включение в классификатор — не признание пользы.' },
+      { id: 'mildronate', title: 'Милдронат', synonyms: 'Мельдоний, Mildronate', category: 'РСП', label: 'orange', photo: 'img/rsp-mildronate.png', verdict: 'Cochrane — 0, FDA — 0. И при этом ЖНВЛП.', lead: 'Кардиопротектор с витрины аптеки и допинг-пробы.' },
+      { id: 'validol', title: 'Валидол', synonyms: 'Validol', category: 'РСП', label: 'orange', photo: 'img/rsp-validol.png', verdict: 'Суёшь под язык валидол и катишься с инфарктом. Cochrane — 0.', lead: 'Мятная таблетка как план при боли в сердце.' },
+      { id: 'aloe', title: 'Алоэ экстракт', synonyms: '', category: 'Негативный перечень ФК', label: 'red', photo: 'img/fk-aloe-extrakt.png', verdict: 'Не рекомендован к медицинскому применению ФК РАМН.', lead: 'Позиция Формулярного комитета — прямая и короткая.' },
+      { id: 'oscillo', title: 'Осциллококцинум', synonyms: 'Оциллококцинум', category: 'Гомеопатия', label: 'red', photo: null, verdict: 'У гомеопатии не может быть доказательств эффективности.', lead: 'Прописывают при гриппе. Действующего вещества — как у остальных сахаринок.' },
+    ];
+
+    const params = new URLSearchParams(location.search);
+    const state = {
+      variant: (params.get('variant') || 'A').toUpperCase(),
+      scene: params.get('scene') || 'list',
+      query: params.get('q') || '',
+      drugId: params.get('drug') || 'anaferon',
+    };
+    if (!VARIANTS.some((v) => v.key === state.variant)) state.variant = 'A';
+    if (!SCENES.some((s) => s.key === state.scene)) state.scene = 'list';
+
+    const app = document.getElementById('app');
+    const stamp = (label) => (label === 'orange' ? 'var(--label-orange)' : 'var(--label-red)');
+
+    function filtered() {
+      const q = state.query.trim().toUpperCase();
+      if (!q) return DRUGS;
+      return DRUGS.filter((d) => (d.title + ' ' + d.synonyms).toUpperCase().includes(q));
+    }
+    function currentDrug() {
+      return DRUGS.find((d) => d.id === state.drugId) || DRUGS[0];
+    }
+    function go(patch) {
+      Object.assign(state, patch);
+      if (state.scene === 'empty') state.query = state.query || 'кверцетин';
+      if (state.scene === 'list' && state.query === 'кверцетин') state.query = '';
+      syncUrl();
+      render();
+    }
+    function syncUrl() {
+      const p = new URLSearchParams();
+      p.set('variant', state.variant);
+      p.set('scene', state.scene);
+      if (state.query) p.set('q', state.query);
+      if (state.scene === 'drug') p.set('drug', state.drugId);
+      history.replaceState(null, '', '?' + p.toString());
+    }
+
+    function render() {
+      if (state.scene === 'empty' && !state.query) state.query = 'кверцетин';
+      document.documentElement.dataset.variant = state.variant;
+      app.dataset.variant = state.variant;
+      const scene = state.scene === 'empty' || state.scene === 'offline' || state.scene === 'list'
+        ? renderHome()
+        : state.scene === 'about'
+          ? renderAbout()
+          : renderDrug();
+      app.innerHTML = scene;
+      bind();
+      document.getElementById('state').textContent =
+        `variant=${state.variant} scene=${state.scene} q="${state.query}" drug=${state.drugId} results=${filtered().length}`;
+      document.getElementById('vlabel').textContent =
+        `${state.variant} (${VARIANTS.find((v) => v.key === state.variant).name})`;
+      document.getElementById('scenes').innerHTML = SCENES.map((s) =>
+        `<button type="button" data-scene="${s.key}" ${s.key === state.scene ? 'aria-current="true"' : ''}>${s.name}</button>`
+      ).join('');
+    }
+
+    function renderHome() {
+      if (state.variant === 'A') return homeA();
+      if (state.variant === 'B') return homeB();
+      return homeC();
+    }
+    function renderDrug() {
+      if (state.variant === 'A') return drugA();
+      if (state.variant === 'B') return homeB(true);
+      return drugC();
+    }
+    function renderAbout() {
+      if (state.variant === 'A') return aboutA();
+      if (state.variant === 'B') return aboutB();
+      return aboutC();
+    }
+
+    function homeA() {
+      const rows = filtered();
+      const offline = state.scene === 'offline';
+      const empty = state.scene === 'empty' || rows.length === 0;
+      return `<div class="screen">
+        <div class="a-top">
+          <p class="a-brand">Фуфломицины</p>
+          <button class="a-info" data-go="about">О справочнике</button>
+        </div>
+        ${offline ? '<p class="a-offline">Снимок 12 авг · сеть недоступна — показан кэш</p>' : ''}
+        <div class="a-hero">
+          <h1>Какой<br>препарат?</h1>
+          <input class="a-search" data-search placeholder="Анаферон, арбидол…" value="${esc(state.query)}" />
+        </div>
+        ${empty ? '<div class="a-empty">В снимке такого нет.</div>' : `
+          <div class="a-list">${rows.map((d) => `
+            <button class="a-row" style="--stripe:${stamp(d.label)}" data-drug="${d.id}">
+              <span class="t">${esc(d.title)}</span>
+              ${d.synonyms ? `<span class="s">${esc(d.synonyms)}</span>` : ''}
+            </button>`).join('')}
+          </div>`}
+      </div>`;
+    }
+
+    function drugA() {
+      const d = currentDrug();
+      return `<div class="screen a-drug">
+        <button class="a-back" data-go="list">← к списку</button>
+        <div class="a-stamp" style="--stamp:${stamp(d.label)}">${esc(d.category)}</div>
+        ${d.photo ? `<img class="a-photo" src="${d.photo}" alt="">` : ''}
+        <h1>${esc(d.title)}</h1>
+        ${d.synonyms ? `<p class="a-syn">${esc(d.synonyms)}</p>` : ''}
+        <p class="a-lead">${esc(d.lead)}</p>
+        <p class="a-verdict">${esc(d.verdict)}</p>
+        <p class="a-source">Источник карточки — внешняя страница.</p>
+      </div>`;
+    }
+
+    function aboutA() {
+      return `<div class="screen a-about">
+        <button class="a-back" data-go="list">← к списку</button>
+        <h1>О справочнике</h1>
+        <p>Это не приложение-аптека и не совет лечиться. Это справочник препаратов с недоказанной эффективностью.</p>
+        <ul>
+          <li style="--stripe:var(--label-red)"><b>Гомеопатия</b> — сахар и вода с легендой.</li>
+          <li style="--stripe:var(--label-orange)"><b>РСП</b> — расстрельный список Никиты Жукова.</li>
+          <li style="--stripe:var(--label-red)"><b>Негативный перечень ФК</b> — позиция Формулярного комитета.</li>
+        </ul>
+        <p><a href="https://github.com/fuflomycin" target="_blank" rel="noreferrer">Исходники</a> · <a href="https://boosty.to/bndby" target="_blank" rel="noreferrer">Поддержать</a></p>
+      </div>`;
+    }
+
+    function homeB(withSheet) {
+      const rows = filtered();
+      const offline = state.scene === 'offline';
+      const empty = !withSheet && (state.scene === 'empty' || rows.length === 0);
+      const d = currentDrug();
+      return `<div class="screen b-shell">
+        <div class="b-head">Фуфломицины</div>
+        ${offline ? '<div class="b-offline">Офлайн · показан снимок с устройства</div>' : ''}
+        <div class="b-list">
+          ${empty ? '<div class="b-empty">Ничего не нашлось в снимке.</div>' : rows.map((x) => `
+            <button class="b-row" data-drug="${x.id}">
+              <span class="b-dot" style="--dot:${stamp(x.label)}"></span>
+              <span><span class="t">${esc(x.title)}</span>
+              ${x.synonyms ? `<div class="s">${esc(x.synonyms)}</div>` : ''}</span>
+            </button>`).join('')}
+        </div>
+        <div class="b-dock">
+          <input data-search placeholder="Препарат" value="${esc(state.query)}" />
+          <button class="info" data-go="about" aria-label="О программе">i</button>
+        </div>
+        ${withSheet ? `<div class="b-sheet">
+          <div class="b-handle"></div>
+          <div class="b-sheet-top">
+            ${d.photo ? `<img src="${d.photo}" alt="">` : '<div class="b-ph"></div>'}
+            <div>
+              <div class="b-cat" style="--stamp:${stamp(d.label)}">${esc(d.category)}</div>
+              <h1>${esc(d.title)}</h1>
+              ${d.synonyms ? `<div class="s">${esc(d.synonyms)}</div>` : ''}
+            </div>
+            <button class="b-close" data-go="list" aria-label="Закрыть">×</button>
+          </div>
+          <div class="b-verdict">${esc(d.verdict)}</div>
+          <div class="b-body">${esc(d.lead)}</div>
+        </div>` : ''}
+      </div>`;
+    }
+
+    function aboutB() {
+      return `<div class="screen b-shell">
+        <div class="b-head">Фуфломицины</div>
+        <div class="b-about b-list">
+          <h1>О программе</h1>
+          <p>Справочник «фуфломицинов»: гомеопатия, РСП и негативный перечень Формулярного комитета. Не медицинская рекомендация.</p>
+          <p><a class="b-pill" href="https://github.com/fuflomycin" target="_blank" rel="noreferrer">Github</a>
+             <a class="b-pill" href="https://boosty.to/bndby" target="_blank" rel="noreferrer">Boosty</a></p>
+        </div>
+        <div class="b-dock">
+          <input data-search placeholder="Препарат" value="${esc(state.query)}" />
+          <button class="info" data-go="list">←</button>
+        </div>
+      </div>`;
+    }
+
+    function homeC() {
+      const rows = filtered();
+      const offline = state.scene === 'offline';
+      const empty = state.scene === 'empty' || rows.length === 0;
+      const sat = offline ? 'filter:grayscale(1);opacity:.85' : '';
+      return `<div class="screen">
+        <div class="c-search-wrap">
+          <input class="c-search" data-search placeholder="Найти препарат" value="${esc(state.query)}" />
+        </div>
+        ${offline ? '<div class="c-banner">Сеть недоступна · снимок на устройстве</div>' : ''}
+        <div class="c-grid">
+          <button class="c-tile c-about-tile" data-go="about">О<br>справочнике</button>
+          ${empty ? '<div class="c-tile c-empty-tile">В снимке<br>нет совпадений</div>' : rows.map((d) => `
+            <button class="c-tile" data-drug="${d.id}" style="${sat}">
+              ${d.photo ? `<img src="${d.photo}" alt="">` : `<div class="ph" style="--tile:${stamp(d.label)}">${esc(d.title)}</div>`}
+              <span class="cap">${esc(d.title)}</span>
+            </button>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    function drugC() {
+      const d = currentDrug();
+      return `<div class="screen c-immersive">
+        <div class="c-hero">
+          <button class="c-chip" data-go="list">← Список</button>
+          ${d.photo ? `<img src="${d.photo}" alt="">` : `<div class="ph">${esc(d.title)}</div>`}
+        </div>
+        <div class="c-body">
+          <div class="c-tag" style="--stamp:${stamp(d.label)}">${esc(d.category)}</div>
+          <h1>${esc(d.title)}</h1>
+          ${d.synonyms ? `<p class="c-syn">${esc(d.synonyms)}</p>` : ''}
+        </div>
+        <div class="c-verdict">${esc(d.verdict)}</div>
+        <div class="c-body"><p>${esc(d.lead)}</p></div>
+      </div>`;
+    }
+
+    function aboutC() {
+      return `<div class="screen c-about">
+        <button class="c-chip" style="position:static;margin-bottom:16px" data-go="list">← Список</button>
+        <h1>О справочнике</h1>
+        <p>Красный — бренд. Ярлык на препарате — категория: гомеопатия, РСП, негативный перечень ФК.</p>
+        <p>Исходники на Github, поддержка на Boosty. Это не совет, чем лечиться.</p>
+      </div>`;
+    }
+
+    function bind() {
+      app.querySelectorAll('[data-go]').forEach((el) => {
+        el.addEventListener('click', () => go({ scene: el.dataset.go }));
+      });
+      app.querySelectorAll('[data-drug]').forEach((el) => {
+        el.addEventListener('click', () => go({ scene: 'drug', drugId: el.dataset.drug }));
+      });
+      const search = app.querySelector('[data-search]');
+      if (search) {
+        search.addEventListener('input', (e) => {
+          state.query = e.target.value;
+          if (state.scene === 'empty' || state.scene === 'offline') state.scene = 'list';
+          syncUrl();
+          const keep = search.selectionStart;
+          render();
+          const next = app.querySelector('[data-search]');
+          if (next) { next.focus(); next.setSelectionRange(keep, keep); }
+        });
+      }
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function cycle(dir) {
+      const i = VARIANTS.findIndex((v) => v.key === state.variant);
+      const next = VARIANTS[(i + dir + VARIANTS.length) % VARIANTS.length];
+      go({ variant: next.key });
+    }
+    document.getElementById('prev').onclick = () => cycle(-1);
+    document.getElementById('next').onclick = () => cycle(1);
+    document.getElementById('scenes').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-scene]');
+      if (btn) go({ scene: btn.dataset.scene });
+    });
+    document.addEventListener('keydown', (e) => {
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.key === 'ArrowLeft') cycle(-1);
+      if (e.key === 'ArrowRight') cycle(1);
+    });
+
+    render();
+  </script>
+</body>
+</html>
