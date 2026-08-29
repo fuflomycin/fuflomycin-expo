@@ -136,6 +136,7 @@ export function createWorkingList(ports: WorkingListPorts): WorkingList {
 
     subscribe(listener: () => void) {
       listeners.add(listener);
+      listener();
       return () => {
         listeners.delete(listener);
       };
