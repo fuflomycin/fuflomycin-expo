@@ -29,10 +29,14 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "webOrigin": "https://fuflomycin.ru"
     }
   }
 }

@@ -1,8 +1,8 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Linking from "expo-linking";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Image,
   Platform,
@@ -15,10 +15,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Drug } from "../../list-build/types";
+import { galleryUri } from "../gallery-uri";
 import list from "../data/list.json";
 import { DIRECTORY_DESCRIPTION, DIRECTORY_NAME } from "../site";
 import { VerdictHtml } from "../verdict-html";
-import { lookupWorkingList, mnnSearch } from "../working-list";
+import { mnnSearch } from "../working-list";
+import { useWorkingListHandle } from "../working-list/provider";
 
 const drugs = list as Drug[];
 
@@ -39,10 +41,6 @@ function goBack() {
     return;
   }
   router.replace("/");
-}
-
-function galleryUri(name: string): string {
-  return `/img/${name}`;
 }
 
 function Gallery({ names }: { names: readonly string[] }) {
@@ -80,8 +78,28 @@ function Gallery({ names }: { names: readonly string[] }) {
 }
 
 export default function DrugScreen() {
+  const list = useWorkingListHandle();
   const params = useLocalSearchParams<{ id: string }>();
-  const { drug, notice } = lookupWorkingList(drugs, routeId(params.id));
+  const id = routeId(params.id);
+  const [view, setView] = useState(() => list.lookup(id));
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void list.hydrate().then(() => {
+        if (!cancelled) {
+          setView(list.lookup(id));
+        }
+        void list.considerFetch("surface");
+      });
+      return () => {
+        cancelled = true;
+        list.leaveDrug();
+      };
+    }, [id, list]),
+  );
+
+  const { drug, notice } = view;
   const mnn = drug === null ? null : mnnSearch(drug);
   const tabTitle =
     drug === null ? DIRECTORY_NAME : `${drug.title} - ${DIRECTORY_NAME}`;
