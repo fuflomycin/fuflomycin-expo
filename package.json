@@ -14,7 +14,7 @@
     "build": "expo export --platform web",
     "eas-build-post-install": "npm run build:list",
     "typecheck": "npm run build:list && tsc --noEmit",
-    "test": "tsx --test list-build/index.test.ts"
+    "test": "tsx --test list-build/index.test.ts src/working-list/index.test.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -34,6 +34,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-web": "~0.21.0",
+    "react-native-webview": "13.16.1",
     "tsx": "^4.20.5"
   },
   "devDependencies": {
