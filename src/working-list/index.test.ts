@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Drug } from "../../list-build/types";
-import { filterWorkingList } from "./index";
+import { filterWorkingList, lookupWorkingList, mnnSearch } from "./index";
 
 function drug(fields: Pick<Drug, "id" | "title"> & Partial<Drug>): Drug {
   return {
@@ -157,5 +157,56 @@ describe("рабочий список: поиск", () => {
 
     assert.deepEqual(result.drugs, []);
     assert.equal(result.notice, "В списке такого нет.");
+  });
+});
+
+describe("рабочий список: препарат", () => {
+  it("lookup по id отдаёт этот препарат", () => {
+    const result = lookupWorkingList(catalog, "arbidol");
+
+    assert.equal(result.drug, arbidol);
+    assert.equal(result.notice, null);
+  });
+
+  it("неизвестный id — фраза «В списке такого нет.», без препарата", () => {
+    const result = lookupWorkingList(catalog, "нет-такого-id");
+
+    assert.equal(result.drug, null);
+    assert.equal(result.notice, "В списке такого нет.");
+    assert.equal(
+      JSON.stringify(result).includes("нет-такого-id"),
+      false,
+    );
+  });
+
+  it("препарат с МНН отдаёт канонические URL Cochrane и Pubmed", () => {
+    const result = mnnSearch(arbidol);
+
+    assert.deepEqual(result, {
+      mnn: "umifenovir",
+      cochraneUrl:
+        "https://www.cochranelibrary.com/advanced-search?q=umifenovir&t=1",
+      pubmedUrl:
+        "https://pubmed.ncbi.nlm.nih.gov/?term=umifenovir&filter=pubt.meta-analysis&filter=pubt.randomizedcontrolledtrial",
+    });
+  });
+
+  it("без МНН блока нет", () => {
+    assert.equal(mnnSearch(kagocel), null);
+  });
+
+  it("МНН кодируется целиком, не только первый пробел", () => {
+    const result = mnnSearch(
+      drug({ id: "spaced", title: "С пробелом", mnn: "foo bar" }),
+    );
+
+    assert.equal(
+      result?.cochraneUrl,
+      "https://www.cochranelibrary.com/advanced-search?q=foo%20bar&t=1",
+    );
+    assert.equal(
+      result?.pubmedUrl,
+      "https://pubmed.ncbi.nlm.nih.gov/?term=foo%20bar&filter=pubt.meta-analysis&filter=pubt.randomizedcontrolledtrial",
+    );
   });
 });

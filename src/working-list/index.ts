@@ -5,6 +5,42 @@ export type FilteredWorkingList = {
   notice: string | null;
 };
 
+export type DrugLookup = {
+  drug: Drug | null;
+  notice: string | null;
+};
+
+export type MnnSearch = {
+  mnn: string;
+  cochraneUrl: string;
+  pubmedUrl: string;
+};
+
+const MISSING_NOTICE = "В списке такого нет.";
+
+export function mnnSearch(drug: Drug): MnnSearch | null {
+  if (drug.mnn === undefined || drug.mnn === "") {
+    return null;
+  }
+  const encoded = encodeURIComponent(drug.mnn);
+  return {
+    mnn: drug.mnn,
+    cochraneUrl: `https://www.cochranelibrary.com/advanced-search?q=${encoded}&t=1`,
+    pubmedUrl: `https://pubmed.ncbi.nlm.nih.gov/?term=${encoded}&filter=pubt.meta-analysis&filter=pubt.randomizedcontrolledtrial`,
+  };
+}
+
+export function lookupWorkingList(
+  drugs: readonly Drug[],
+  id: string,
+): DrugLookup {
+  const drug = drugs.find((item) => item.id === id);
+  if (drug === undefined) {
+    return { drug: null, notice: MISSING_NOTICE };
+  }
+  return { drug, notice: null };
+}
+
 export function filterWorkingList(
   drugs: readonly Drug[],
   query: string,
@@ -14,11 +50,11 @@ export function filterWorkingList(
   }
   const needle = normalize(query);
   if (needle === "") {
-    return { drugs: [], notice: "В списке такого нет." };
+    return { drugs: [], notice: MISSING_NOTICE };
   }
   const matches = drugs.filter((item) => matchesQuery(item, needle));
   if (matches.length === 0) {
-    return { drugs: [], notice: "В списке такого нет." };
+    return { drugs: [], notice: MISSING_NOTICE };
   }
   return { drugs: matches, notice: null };
 }

@@ -1,7 +1,15 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Link } from "expo-router";
 import Head from "expo-router/head";
 import { useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Drug } from "../../list-build/types";
 import list from "../data/list.json";
@@ -60,12 +68,17 @@ export default function ListScreen() {
           notice ? <Text style={styles.empty}>{notice}</Text> : null
         }
         renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.title}>{item.title}</Text>
-            {item.other.length > 0 ? (
-              <Text style={styles.synonyms}>{item.other.join(", ")}</Text>
-            ) : null}
-          </View>
+          <Link
+            href={{ pathname: "/[id]", params: { id: item.id } }}
+            asChild
+          >
+            <Pressable style={styles.row}>
+              <Text style={styles.title}>{item.title}</Text>
+              {item.other.length > 0 ? (
+                <Text style={styles.synonyms}>{item.other.join(", ")}</Text>
+              ) : null}
+            </Pressable>
+          </Link>
         )}
       />
     </View>
