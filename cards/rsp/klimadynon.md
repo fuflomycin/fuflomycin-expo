@@ -1,0 +1,16 @@
+---
+section: РСП / Фуфломицин
+title: Климадинон
+other:
+  - Klimadynon
+producer: null
+source: >-
+  https://encyclopatia.ru/wiki/%D0%A0%D0%B0%D1%81%D1%81%D1%82%D1%80%D0%B5%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9_%D1%81%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BF%D1%80%D0%B5%D0%BF%D0%B0%D1%80%D0%B0%D1%82%D0%BE%D0%B2
+label: orange
+gallery:
+  - rsp-klimadynon.png
+---
+
+Фитотерапия (цимицифуга кистевидная) от вегетативных расстройств при менопаузе. В единичном сравнительном исследовании без рандомизации и плацебо-контроля препарат сравнивался с Кломифеном, там говорится [98](http://www.ncbi.nlm.nih.gov/pubmed/23347605) о возможном альтернативном применении этой травы; другие работы ещё хуже;
+
+Cochrane Reviews 0; Pubmed 5; FDA 0; RXlist 0; ВОЗ 0; ФК (-).
