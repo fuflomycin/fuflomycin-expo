@@ -1,7 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import Head from "expo-router/head";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -11,16 +11,19 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { Drug } from "../../list-build/types";
-import list from "../data/list.json";
 import { DIRECTORY_DESCRIPTION, DIRECTORY_NAME } from "../site";
-import { filterWorkingList } from "../working-list";
-
-const drugs = list as Drug[];
+import { useWorkingList } from "../working-list/provider";
 
 export default function ListScreen() {
+  const list = useWorkingList();
   const [query, setQuery] = useState("");
-  const { drugs: visible, notice } = filterWorkingList(drugs, query);
+  const { drugs: visible, notice } = list.filter(query);
+
+  useFocusEffect(
+    useCallback(() => {
+      void list.considerFetch("surface");
+    }, [list]),
+  );
 
   return (
     <View style={styles.screen}>
