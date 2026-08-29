@@ -57,7 +57,15 @@ export default function ListScreen() {
               onChangeText={setQuery}
             />
           </View>
-          <MaterialIcons name="info-outline" size={24} color="#fff" />
+          <Link href="/info" asChild>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="О справочнике"
+              hitSlop={8}
+            >
+              <MaterialIcons name="info-outline" size={24} color="#fff" />
+            </Pressable>
+          </Link>
         </View>
       </SafeAreaView>
       <FlatList
