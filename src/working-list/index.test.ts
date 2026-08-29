@@ -303,6 +303,35 @@ describe("рабочий список: успех и не-успех", () => {
     );
   });
 
+  it("подписчик после hydrate сразу видит успех той же сборки, а не пол", async () => {
+    const persist = memoryPersist();
+    const first = createWorkingList(
+      ports({
+        embedded: [arbidol],
+        persist,
+        fetchList: async () => ({ ok: true, body: JSON.stringify([kagocel]) }),
+      }),
+    );
+    await first.hydrate();
+    await first.considerFetch("surface");
+
+    const cold = createWorkingList(
+      ports({
+        embedded: [arbidol],
+        persist,
+        fetchList: async () => ({ ok: false }),
+      }),
+    );
+    await cold.hydrate();
+
+    let seen: string[] = [];
+    cold.subscribe(() => {
+      seen = cold.filter("").drugs.map((item) => item.id);
+    });
+
+    assert.deepEqual(seen, ["kagocel"]);
+  });
+
   it("новая сборка с другим вшитым списком снова даёт пол", async () => {
     const persist = memoryPersist();
     const first = createWorkingList(
