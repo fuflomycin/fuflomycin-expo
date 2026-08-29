@@ -1,0 +1,7 @@
+{
+  "name": "fuflomycin-expo",
+  "private": true,
+  "scripts": {
+    "prototype:screens": "python3 -m http.server 4173 --directory prototype/four-screens"
+  }
+}
