@@ -33,6 +33,12 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Google Play upload key (copied from fuflomycin-pwa; never commit)
+credentials.json
+credentials/android/
+*.keystore
+*.aab
+
 # typescript
 *.tsbuildinfo
 

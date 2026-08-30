@@ -2,12 +2,14 @@
   "expo": {
     "name": "Фуфломицины",
     "slug": "fuflomycin",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fuflomycin",
     "userInterfaceStyle": "light",
     "android": {
+      "package": "com.fuflomycin_rn",
+      "versionCode": 18,
       "adaptiveIcon": {
         "backgroundColor": "#ff5959",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -36,7 +38,12 @@
       "typedRoutes": true
     },
     "extra": {
-      "webOrigin": "https://fuflomycin.ru"
-    }
+      "webOrigin": "https://fuflomycin.expo.app",
+      "router": {},
+      "eas": {
+        "projectId": "a865e832-b480-4950-8ca2-2e086bbb90d7"
+      }
+    },
+    "owner": "bndby"
   }
 }
