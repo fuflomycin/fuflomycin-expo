@@ -44,5 +44,6 @@ credentials/android/
 
 # generated list (same bytes in both places; not committed)
 src/data/list.json
+src/data/gallery-assets.native.ts
 public/data/
 public/img/

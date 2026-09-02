@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Drug } from "../../list-build/types";
-import { galleryUri } from "../gallery-uri";
+import { gallerySource } from "../gallery-source";
 import list from "../data/list.json";
 import { DIRECTORY_DESCRIPTION, DIRECTORY_NAME } from "../site";
 import { VerdictHtml } from "../verdict-html";
@@ -61,7 +61,7 @@ function Gallery({ names }: { names: readonly string[] }) {
         <Image
           key={name}
           accessibilityLabel=""
-          source={{ uri: galleryUri(name) }}
+          source={gallerySource(name)}
           resizeMode="contain"
           style={{ width, height: 300 }}
           onError={() => {

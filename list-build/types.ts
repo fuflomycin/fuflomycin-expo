@@ -17,4 +17,5 @@ export type BuildListOptions = {
   bundlePath: string;
   dataPath: string;
   imagesDir: string;
+  nativeAssetsPath: string;
 };

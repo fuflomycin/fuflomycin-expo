@@ -52,8 +52,13 @@ export async function buildList(options: BuildListOptions): Promise<Drug[]> {
   await mkdir(path.dirname(options.bundlePath), { recursive: true });
   await mkdir(path.dirname(options.dataPath), { recursive: true });
   await mkdir(options.imagesDir, { recursive: true });
+  await mkdir(path.dirname(options.nativeAssetsPath), { recursive: true });
   await writeFile(options.bundlePath, json);
   await writeFile(options.dataPath, json);
+  await writeFile(
+    options.nativeAssetsPath,
+    nativeGalleryAssetsModule(options.nativeAssetsPath, images),
+  );
   await Promise.all(
     images.map((filePath) =>
       copyFile(filePath, path.join(options.imagesDir, path.basename(filePath))),
@@ -124,4 +129,22 @@ function galleryFrom(data: Record<string, unknown>): string[] {
 
 function markdownToHtml(markdown: string): string {
   return marked.parse(markdown.trim(), { async: false }) as string;
+}
+
+function nativeGalleryAssetsModule(
+  nativeAssetsPath: string,
+  images: string[],
+): string {
+  const fromDir = path.dirname(nativeAssetsPath);
+  const entries = [...images]
+    .sort((a, b) => path.basename(a).localeCompare(path.basename(b)))
+    .map((imagePath) => {
+      let relative = path.relative(fromDir, imagePath).split(path.sep).join("/");
+      if (!relative.startsWith(".")) {
+        relative = `./${relative}`;
+      }
+      return `  ${JSON.stringify(path.basename(imagePath))}: require(${JSON.stringify(relative)})`;
+    });
+  const body = entries.length > 0 ? `${entries.join(",\n")},\n` : "";
+  return `export const bundledGallery: Record<string, number> = {\n${body}};\n`;
 }

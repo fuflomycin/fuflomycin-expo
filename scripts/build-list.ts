@@ -8,6 +8,12 @@ async function main() {
     bundlePath: path.join(root, "src", "data", "list.json"),
     dataPath: path.join(root, "public", "data", "list.json"),
     imagesDir: path.join(root, "public", "img"),
+    nativeAssetsPath: path.join(
+      root,
+      "src",
+      "data",
+      "gallery-assets.native.ts",
+    ),
   });
 }
 

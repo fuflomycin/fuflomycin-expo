@@ -11,8 +11,19 @@ async function setup() {
   const bundlePath = path.join(root, "bundle", "list.json");
   const dataPath = path.join(root, "public", "data", "list.json");
   const imagesDir = path.join(root, "public", "img");
-  return { root, cardsDir, bundlePath, dataPath, imagesDir };
+  const nativeAssetsPath = path.join(
+    root,
+    "src",
+    "data",
+    "gallery-assets.native.ts",
+  );
+  return { root, cardsDir, bundlePath, dataPath, imagesDir, nativeAssetsPath };
 }
+
+const PNG_1x1 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 async function writeCard(
   cardsDir: string,
@@ -387,5 +398,52 @@ describe("сборка списка", () => {
     assert.equal(bundle.equals(data), true);
     assert.equal(path.basename(path.dirname(paths.dataPath)), "data");
     assert.equal(path.basename(paths.dataPath), "list.json");
+  });
+
+  it("пишет native-карту require для каждого файла, скопированного в /img/", async () => {
+    const paths = await setup();
+    await writeCard(
+      paths.cardsDir,
+      "rsp",
+      "adaptol.md",
+      [
+        "section: РСП / Фуфломицин",
+        "title: Адаптол",
+        "other: []",
+        "source: https://example.test/adaptol",
+        "label: orange",
+        "gallery: adaptol.png",
+      ].join("\n"),
+      "Текст.",
+    );
+    await mkdir(path.join(paths.cardsDir, "rsp"), { recursive: true });
+    await writeFile(path.join(paths.cardsDir, "rsp", "adaptol.png"), PNG_1x1);
+    await mkdir(path.join(paths.cardsDir, "fk"), { recursive: true });
+    await writeFile(path.join(paths.cardsDir, "fk", "orphan.png"), PNG_1x1);
+
+    await buildList(paths);
+
+    const copiedAdaptol = await readFile(
+      path.join(paths.imagesDir, "adaptol.png"),
+    );
+    const copiedOrphan = await readFile(
+      path.join(paths.imagesDir, "orphan.png"),
+    );
+    assert.equal(copiedAdaptol.equals(PNG_1x1), true);
+    assert.equal(copiedOrphan.equals(PNG_1x1), true);
+
+    const map = await readFile(paths.nativeAssetsPath, "utf8");
+    const adaptol = map.match(/"adaptol\.png": require\("([^"]+)"\)/);
+    const orphan = map.match(/"orphan\.png": require\("([^"]+)"\)/);
+    assert.ok(adaptol, "в карте нет adaptol.png");
+    assert.ok(orphan, "в карте нет orphan.png");
+    assert.equal(adaptol[1].includes("/cards/"), true);
+    assert.equal(orphan[1].includes("/cards/"), true);
+
+    const mapDir = path.dirname(paths.nativeAssetsPath);
+    const adaptolBytes = await readFile(path.resolve(mapDir, adaptol[1]));
+    const orphanBytes = await readFile(path.resolve(mapDir, orphan[1]));
+    assert.equal(adaptolBytes.equals(PNG_1x1), true);
+    assert.equal(orphanBytes.equals(PNG_1x1), true);
   });
 });
