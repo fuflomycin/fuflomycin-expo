@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "android": {
       "package": "com.fuflomycin_rn",
-      "versionCode": 18,
+      "versionCode": 19,
       "adaptiveIcon": {
         "backgroundColor": "#ff5959",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
