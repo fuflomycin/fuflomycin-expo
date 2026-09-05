@@ -10,12 +10,14 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { listScrollBottomPadding } from "../list-scroll-padding";
 import { DIRECTORY_DESCRIPTION, DIRECTORY_NAME } from "../site";
 import { useWorkingList } from "../working-list/provider";
 
 export default function ListScreen() {
   const list = useWorkingList();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const { drugs: visible, notice } = list.filter(query);
 
@@ -75,6 +77,9 @@ export default function ListScreen() {
         data={visible}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingBottom: listScrollBottomPadding(insets.bottom),
+        }}
         ListEmptyComponent={
           notice ? <Text style={styles.empty}>{notice}</Text> : null
         }

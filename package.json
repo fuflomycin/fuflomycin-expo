@@ -14,7 +14,7 @@
     "build": "expo export --platform web",
     "eas-build-post-install": "npm run build:list",
     "typecheck": "npm run build:list && tsc --noEmit",
-    "test": "tsx --test list-build/index.test.ts src/working-list/index.test.ts src/resolve-gallery-source.test.ts src/native-compat/worklets-api.test.ts src/verdict-html-height.test.ts"
+    "test": "tsx --test list-build/index.test.ts src/working-list/index.test.ts src/resolve-gallery-source.test.ts src/native-compat/worklets-api.test.ts src/verdict-html-height.test.ts src/list-scroll-padding.test.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -44,6 +44,7 @@
   "devDependencies": {
     "@types/node": "^24.5.2",
     "@types/react": "~19.2.2",
+    "eas-cli": "^23.2.0",
     "typescript": "~5.9.2"
   }
 }
