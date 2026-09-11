@@ -2,14 +2,14 @@
   "expo": {
     "name": "Фуфломицины",
     "slug": "fuflomycin",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fuflomycin",
     "userInterfaceStyle": "light",
     "android": {
       "package": "com.fuflomycin_rn",
-      "versionCode": 20,
+      "versionCode": 21,
       "adaptiveIcon": {
         "backgroundColor": "#ff5959",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -31,7 +31,17 @@
           "imageWidth": 200
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "./plugins/with-android-r8.js"
     ],
     "experiments": {
       "typedRoutes": true
