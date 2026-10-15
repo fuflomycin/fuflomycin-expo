@@ -47,18 +47,12 @@ export async function buildList(options: BuildListOptions): Promise<Drug[]> {
   }
 
   drugs.sort((a, b) => a.title.localeCompare(b.title, "ru"));
+  assertGalleryPresent(drugs, images);
 
   const json = JSON.stringify(drugs);
-  await mkdir(path.dirname(options.bundlePath), { recursive: true });
-  await mkdir(path.dirname(options.dataPath), { recursive: true });
+  await mkdir(path.dirname(options.catalogPath), { recursive: true });
   await mkdir(options.imagesDir, { recursive: true });
-  await mkdir(path.dirname(options.nativeAssetsPath), { recursive: true });
-  await writeFile(options.bundlePath, json);
-  await writeFile(options.dataPath, json);
-  await writeFile(
-    options.nativeAssetsPath,
-    nativeGalleryAssetsModule(options.nativeAssetsPath, images),
-  );
+  await writeFile(options.catalogPath, json);
   await Promise.all(
     images.map((filePath) =>
       copyFile(filePath, path.join(options.imagesDir, path.basename(filePath))),
@@ -66,6 +60,26 @@ export async function buildList(options: BuildListOptions): Promise<Drug[]> {
   );
 
   return drugs;
+}
+
+function assertGalleryPresent(drugs: readonly Drug[], images: readonly string[]): void {
+  const seen = new Set<string>();
+  for (const imagePath of images) {
+    const name = path.basename(imagePath);
+    if (seen.has(name)) {
+      throw new Error(`Кадр «${name}» встречается в cards/ дважды`);
+    }
+    seen.add(name);
+  }
+  for (const drug of drugs) {
+    for (const name of drug.gallery) {
+      if (!seen.has(name)) {
+        throw new Error(
+          `Кадр «${name}» препарата ${drug.id} не найден среди файлов cards/`,
+        );
+      }
+    }
+  }
 }
 
 function toDrug(fileName: string, raw: string): Drug | null {
@@ -129,22 +143,4 @@ function galleryFrom(data: Record<string, unknown>): string[] {
 
 function markdownToHtml(markdown: string): string {
   return marked.parse(markdown.trim(), { async: false }) as string;
-}
-
-function nativeGalleryAssetsModule(
-  nativeAssetsPath: string,
-  images: string[],
-): string {
-  const fromDir = path.dirname(nativeAssetsPath);
-  const entries = [...images]
-    .sort((a, b) => path.basename(a).localeCompare(path.basename(b)))
-    .map((imagePath) => {
-      let relative = path.relative(fromDir, imagePath).split(path.sep).join("/");
-      if (!relative.startsWith(".")) {
-        relative = `./${relative}`;
-      }
-      return `  ${JSON.stringify(path.basename(imagePath))}: require(${JSON.stringify(relative)})`;
-    });
-  const body = entries.length > 0 ? `${entries.join(",\n")},\n` : "";
-  return `export const bundledGallery: Record<string, number> = {\n${body}};\n`;
 }

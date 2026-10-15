@@ -3,17 +3,19 @@ import { buildList } from "../list-build";
 
 async function main() {
   const root = process.cwd();
+  const catalogDir = path.join(
+    root,
+    "android",
+    "app",
+    "src",
+    "main",
+    "assets",
+    "catalog",
+  );
   await buildList({
     cardsDir: path.join(root, "cards"),
-    bundlePath: path.join(root, "src", "data", "list.json"),
-    dataPath: path.join(root, "public", "data", "list.json"),
-    imagesDir: path.join(root, "public", "img"),
-    nativeAssetsPath: path.join(
-      root,
-      "src",
-      "data",
-      "gallery-assets.native.ts",
-    ),
+    catalogPath: path.join(catalogDir, "list.json"),
+    imagesDir: path.join(catalogDir, "img"),
   });
 }
 

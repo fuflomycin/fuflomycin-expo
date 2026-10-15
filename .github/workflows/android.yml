@@ -1,0 +1,172 @@
+# Push to a branch other than main: signed release APK artifact.
+# Push to main: signed AAB, published to Play closed testing (track alpha).
+
+name: Android
+
+on:
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Release APK
+    if: github.repository == 'fuflomycin/fuflomycin-expo' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install catalog compiler
+        run: npm ci
+
+      - name: Test catalog compiler
+        run: npm test
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install upload keystore
+        env:
+          PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          PLAY_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+          PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+          PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
+        run: python3 scripts/ci-android-env.py keystore
+
+      - name: Assemble release APK
+        working-directory: android
+        run: ./gradlew :app:assembleRelease
+
+      - name: Name the APK
+        id: apk
+        run: |
+          version=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' android/app/build.gradle.kts | head -1)
+          sha=$(printf '%s' "$GITHUB_SHA" | cut -c1-7)
+          file="fuflomycin-${version}-${sha}-release.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.apk.outputs.file }}
+          path: ${{ steps.apk.outputs.file }}
+          if-no-files-found: error
+
+  aab:
+    name: Closed testing AAB
+    if: github.repository == 'fuflomycin/fuflomycin-expo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: play-closed
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install catalog compiler
+        run: npm ci
+
+      - name: Test catalog compiler
+        run: npm test
+
+      - name: Check Play version script
+        run: python3 scripts/play-closed-track.py self-check
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install upload keystore
+        env:
+          PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          PLAY_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+          PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+          PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
+        run: python3 scripts/ci-android-env.py keystore
+
+      - name: Write Play service account
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          test -n "$PLAY_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play-service-account.json"
+          chmod 600 "$RUNNER_TEMP/play-service-account.json"
+
+      - name: Play version code
+        id: version
+        env:
+          PLAY_SERVICE_ACCOUNT_FILE: ${{ runner.temp }}/play-service-account.json
+        run: |
+          code=$(python3 scripts/play-closed-track.py version-code)
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Bundle release
+        working-directory: android
+        run: ./gradlew :app:bundleRelease -Pfuflomycin.versionCode=${{ steps.version.outputs.code }}
+
+      - name: Check upload certificate
+        env:
+          AAB_PATH: android/app/build/outputs/bundle/release/app-release.aab
+        run: python3 scripts/play-closed-track.py check-cert
+
+      - name: Name the AAB
+        id: aab
+        run: |
+          version=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' android/app/build.gradle.kts | head -1)
+          sha=$(printf '%s' "$GITHUB_SHA" | cut -c1-7)
+          file="fuflomycin-${version}-${{ steps.version.outputs.code }}-${sha}.aab"
+          cp android/app/build/outputs/bundle/release/app-release.aab "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.aab.outputs.file }}
+          path: ${{ steps.aab.outputs.file }}
+          if-no-files-found: error
+
+      - name: Release notes
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: python3 scripts/play-closed-track.py note > "$RUNNER_TEMP/release-notes.txt"
+
+      - name: Publish to closed testing
+        env:
+          AAB_PATH: ${{ steps.aab.outputs.file }}
+          RELEASE_NOTES_FILE: ${{ runner.temp }}/release-notes.txt
+          PLAY_SERVICE_ACCOUNT_FILE: ${{ runner.temp }}/play-service-account.json
+        run: python3 scripts/play-closed-track.py publish

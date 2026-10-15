@@ -8,16 +8,9 @@ import { buildList } from "./index";
 async function setup() {
   const root = await mkdtemp(path.join(tmpdir(), "list-build-"));
   const cardsDir = path.join(root, "cards");
-  const bundlePath = path.join(root, "bundle", "list.json");
-  const dataPath = path.join(root, "public", "data", "list.json");
-  const imagesDir = path.join(root, "public", "img");
-  const nativeAssetsPath = path.join(
-    root,
-    "src",
-    "data",
-    "gallery-assets.native.ts",
-  );
-  return { root, cardsDir, bundlePath, dataPath, imagesDir, nativeAssetsPath };
+  const catalogPath = path.join(root, "catalog", "list.json");
+  const imagesDir = path.join(root, "catalog", "img");
+  return { root, cardsDir, catalogPath, imagesDir };
 }
 
 const PNG_1x1 = Buffer.from(
@@ -38,6 +31,14 @@ async function writeCard(
     path.join(dir, fileName),
     `---\n${frontmatter}\n---\n\n${body}\n`,
     "utf8",
+  );
+}
+
+async function writeImages(cardsDir: string, category: string, names: string[]) {
+  const dir = path.join(cardsDir, category);
+  await mkdir(dir, { recursive: true });
+  await Promise.all(
+    names.map((name) => writeFile(path.join(dir, name), PNG_1x1)),
   );
 }
 
@@ -65,7 +66,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.equal(list[0]?.id, "abnobaViscumFraksini");
   });
@@ -87,7 +88,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.equal(list[0]?.section, "РСП / Фуфломицин");
   });
@@ -109,7 +110,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.equal(
       list[0]?.contents,
@@ -147,9 +148,10 @@ describe("сборка списка", () => {
       ].join("\n"),
       "Текст.",
     );
+    await writeImages(paths.cardsDir, "rsp", ["cover.png", "one.png", "two.png"]);
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
     const byId = Object.fromEntries(list.map((item) => [item.id, item]));
 
     assert.deepEqual(byId.adaptol?.gallery, ["cover.png"]);
@@ -177,7 +179,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.deepEqual(list[0]?.gallery, []);
   });
@@ -199,9 +201,14 @@ describe("сборка списка", () => {
       ].join("\n"),
       "Текст.",
     );
+    await writeImages(paths.cardsDir, "rsp", [
+      "ademetionin.png",
+      "geptral.png",
+      "geptor.png",
+    ]);
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.deepEqual(list[0]?.gallery, [
       "ademetionin.png",
@@ -233,7 +240,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
     const keys = Object.keys(list[0]!);
 
     assert.deepEqual(
@@ -277,7 +284,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.deepEqual(
       list.map((item) => item.label),
@@ -317,7 +324,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
     const byId = Object.fromEntries(list.map((item) => [item.id, item]));
 
     assert.equal(byId.amizon?.mnn, "enisamium iodide");
@@ -367,7 +374,7 @@ describe("сборка списка", () => {
     );
 
     await buildList(paths);
-    const list = await readList(paths.bundlePath);
+    const list = await readList(paths.catalogPath);
 
     assert.deepEqual(
       list.map((item) => item.title),
@@ -375,32 +382,7 @@ describe("сборка списка", () => {
     );
   });
 
-  it("пишет одни и те же байты в бандл и в /data/list.json", async () => {
-    const paths = await setup();
-    await writeCard(
-      paths.cardsDir,
-      "fk",
-      "etamzilat.md",
-      [
-        "section: Негативный перечень ФК",
-        "title: Этамзилат",
-        "other: []",
-        "source: https://example.test/et",
-        "label: red",
-      ].join("\n"),
-      "Текст.",
-    );
-
-    await buildList(paths);
-    const bundle = await readFile(paths.bundlePath);
-    const data = await readFile(paths.dataPath);
-
-    assert.equal(bundle.equals(data), true);
-    assert.equal(path.basename(path.dirname(paths.dataPath)), "data");
-    assert.equal(path.basename(paths.dataPath), "list.json");
-  });
-
-  it("пишет native-карту require для каждого файла, скопированного в /img/", async () => {
+  it("пишет list.json и копирует кадры", async () => {
     const paths = await setup();
     await writeCard(
       paths.cardsDir,
@@ -423,6 +405,7 @@ describe("сборка списка", () => {
 
     await buildList(paths);
 
+    assert.equal(path.basename(paths.catalogPath), "list.json");
     const copiedAdaptol = await readFile(
       path.join(paths.imagesDir, "adaptol.png"),
     );
@@ -431,19 +414,25 @@ describe("сборка списка", () => {
     );
     assert.equal(copiedAdaptol.equals(PNG_1x1), true);
     assert.equal(copiedOrphan.equals(PNG_1x1), true);
+  });
 
-    const map = await readFile(paths.nativeAssetsPath, "utf8");
-    const adaptol = map.match(/"adaptol\.png": require\("([^"]+)"\)/);
-    const orphan = map.match(/"orphan\.png": require\("([^"]+)"\)/);
-    assert.ok(adaptol, "в карте нет adaptol.png");
-    assert.ok(orphan, "в карте нет orphan.png");
-    assert.equal(adaptol[1].includes("/cards/"), true);
-    assert.equal(orphan[1].includes("/cards/"), true);
+  it("отсутствующий кадр роняет сборку", async () => {
+    const paths = await setup();
+    await writeCard(
+      paths.cardsDir,
+      "rsp",
+      "adaptol.md",
+      [
+        "section: РСП / Фуфломицин",
+        "title: Адаптол",
+        "other: []",
+        "source: https://example.test/adaptol",
+        "label: orange",
+        "gallery: missing.png",
+      ].join("\n"),
+      "Текст.",
+    );
 
-    const mapDir = path.dirname(paths.nativeAssetsPath);
-    const adaptolBytes = await readFile(path.resolve(mapDir, adaptol[1]));
-    const orphanBytes = await readFile(path.resolve(mapDir, orphan[1]));
-    assert.equal(adaptolBytes.equals(PNG_1x1), true);
-    assert.equal(orphanBytes.equals(PNG_1x1), true);
+    await assert.rejects(() => buildList(paths), /missing\.png/);
   });
 });

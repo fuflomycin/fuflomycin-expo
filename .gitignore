@@ -1,25 +1,15 @@
 # dependencies
 node_modules/
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
+# Android
 .kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-/ios
-/android
-
-# Metro
-.metro-health-check*
+android/.gradle/
+android/.idea/
+android/local.properties
+android/**/build/
+android/app/.cxx/
+android/keystore.properties
+android/app/src/main/assets/catalog/
 
 # debug
 npm-debug.*
@@ -31,19 +21,19 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
-# Google Play upload key (copied from fuflomycin-pwa; never commit)
+# Google Play upload key (never commit)
 credentials.json
 credentials/android/
 *.keystore
+*.jks
 *.aab
 
 # typescript
 *.tsbuildinfo
 
-# generated list (same bytes in both places; not committed)
-src/data/list.json
-src/data/gallery-assets.native.ts
-public/data/
-public/img/
+# python
+__pycache__/
+*.pyc

@@ -14,8 +14,6 @@ export type Drug = {
 
 export type BuildListOptions = {
   cardsDir: string;
-  bundlePath: string;
-  dataPath: string;
+  catalogPath: string;
   imagesDir: string;
-  nativeAssetsPath: string;
 };
