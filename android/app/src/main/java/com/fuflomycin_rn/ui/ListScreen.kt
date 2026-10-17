@@ -132,7 +132,7 @@ private fun ListBar(
         IconButton(onClick = onOpenInfo) {
             Icon(
                 imageVector = Icons.Outlined.Info,
-                contentDescription = "О справочнике",
+                contentDescription = "О РСП",
                 tint = Color.White,
                 modifier = Modifier.size(24.dp),
             )

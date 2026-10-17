@@ -50,7 +50,7 @@ class ScreensTest {
         rule.onNodeWithContentDescription("Препарат").performTextInput("нет-такого")
         rule.onNodeWithText("Препаратов: 0").assertIsDisplayed()
         rule.onNodeWithText("В списке такого нет.").assertIsDisplayed()
-        rule.onNodeWithContentDescription("О справочнике").performClick()
+        rule.onNodeWithContentDescription("О РСП").performClick()
         assertEquals(1, opened)
     }
 
@@ -131,6 +131,8 @@ class ScreensTest {
         }
 
         rule.onNodeWithText("Это не источник персональных медицинских рекомендаций.").assertIsDisplayed()
+        rule.onNodeWithText("РСП — неполный список препаратов.").assertIsDisplayed()
+        rule.onNodeWithText("Дополнение:").assertIsDisplayed()
         rule.onNodeWithText("Легенда").performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Github").performScrollTo().assertIsDisplayed()
         rule.onNodeWithContentDescription("Назад").performClick()
@@ -149,7 +151,7 @@ class ScreensTest {
         rule.onNodeWithText("МНН: umifenovir").assertIsDisplayed()
         rule.onNodeWithContentDescription("Назад").performClick()
         rule.onNodeWithText("Арбидол").assertIsDisplayed()
-        rule.onNodeWithContentDescription("О справочнике").performClick()
+        rule.onNodeWithContentDescription("О РСП").performClick()
         rule.onNodeWithText("Легенда").performScrollTo().assertIsDisplayed()
     }
 }

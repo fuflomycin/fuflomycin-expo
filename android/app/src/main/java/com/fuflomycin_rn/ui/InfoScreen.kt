@@ -50,7 +50,7 @@ fun InfoScreen(onBack: () -> Unit) {
                 )
             }
             Text(
-                text = "О справочнике",
+                text = "О РСП",
                 modifier = Modifier.weight(1f),
                 color = Color.White,
                 fontSize = 20.sp,
@@ -60,20 +60,21 @@ fun InfoScreen(onBack: () -> Unit) {
         Column(
             Modifier.verticalScroll(rememberScrollState()).padding(16.dp).padding(bottom = 16.dp),
         ) {
-            Heading("О справочнике")
+            Heading("О РСП")
             Paragraph("Это не источник персональных медицинских рекомендаций.")
-            Paragraph("Исходный код Справочника и карточек доступен на GitHub.")
-            ActionButton("Github", GITHUB_URL)
-            Heading("Поддержка")
-            Paragraph("Поддержать развитие Справочника:")
-            ActionButton("Boosty", BOOSTY_URL)
-            Paragraph("Справочник содержит неполный список препаратов трёх категорий:")
+            Paragraph("РСП — неполный список препаратов.")
             RspLine()
+            Paragraph("Дополнение:")
             Paragraph("• Гомеопатия")
             Paragraph("• Негативный перечень ФК (Формулярный комитет РАМН)")
             Paragraph(
                 "Список препаратов сформирован на основе отсутствия убедительных данных об эффективности по заявленным показаниям, как того требует доказательная медицина, а также по отсутствию в авторитетных источниках и рекомендациях.",
             )
+            Paragraph("Исходный код РСП и карточек доступен на GitHub.")
+            ActionButton("Github", GITHUB_URL)
+            Heading("Поддержка")
+            Paragraph("Поддержать развитие РСП:")
+            ActionButton("Boosty", BOOSTY_URL)
             Text(
                 text = "Легенда",
                 modifier = Modifier.padding(top = 12.dp, bottom = 10.dp),
@@ -154,7 +155,7 @@ private fun RspLine() {
     val text =
         buildAnnotatedString {
             withStyle(SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
-                append("• РСП — ")
+                append("Категория РСП — ")
             }
             withLink(
                 LinkAnnotation.Url(
@@ -165,7 +166,7 @@ private fun RspLine() {
                 append("расстрельный список препаратов")
             }
             withStyle(SpanStyle(color = MaterialTheme.colorScheme.onBackground)) {
-                append(" Никиты Жукова")
+                append(" Никиты Жукова.")
             }
         }
     Text(
