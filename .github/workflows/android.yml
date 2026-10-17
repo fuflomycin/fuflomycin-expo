@@ -1,4 +1,4 @@
-# Push to a branch other than main: signed release APK artifact.
+# Push to a branch other than main: signed release APK artifact and public prerelease.
 # Push to main: signed AAB, published to Play closed testing (track alpha).
 
 name: Android
@@ -16,6 +16,8 @@ jobs:
     name: Release APK
     if: github.repository == 'fuflomycin/fuflomycin-expo' && github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,8 +64,11 @@ jobs:
           version=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' android/app/build.gradle.kts | head -1)
           sha=$(printf '%s' "$GITHUB_SHA" | cut -c1-7)
           file="fuflomycin-${version}-${sha}-release.apk"
+          title="fuflomycin-${version}-${sha}"
           cp android/app/build/outputs/apk/release/app-release.apk "$file"
           echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
 
       - name: Upload release APK
         uses: actions/upload-artifact@v7
@@ -72,10 +77,30 @@ jobs:
           path: ${{ steps.apk.outputs.file }}
           if-no-files-found: error
 
+      - name: Publish prerelease APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          tag="apk-${{ steps.apk.outputs.sha }}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "prerelease $tag already exists"
+            exit 0
+          fi
+          python3 scripts/play-closed-track.py note > "$RUNNER_TEMP/apk-notes.txt"
+          gh release create "$tag" \
+            "${{ steps.apk.outputs.file }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "${{ steps.apk.outputs.title }}" \
+            --notes-file "$RUNNER_TEMP/apk-notes.txt" \
+            --prerelease
+
   aab:
     name: Closed testing AAB
     if: github.repository == 'fuflomycin/fuflomycin-expo' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: play-closed
     concurrency:
       group: play-closed
       cancel-in-progress: false
