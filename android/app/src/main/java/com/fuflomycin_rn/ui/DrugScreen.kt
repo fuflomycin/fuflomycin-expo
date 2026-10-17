@@ -12,23 +12,24 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -38,12 +39,12 @@ import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,8 +52,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +68,7 @@ import com.fuflomycin_rn.data.mnnSearch
 import com.fuflomycin_rn.ui.theme.Brand
 import com.fuflomycin_rn.ui.theme.LocalLinkColor
 import com.fuflomycin_rn.ui.theme.labelColor
+import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -90,31 +95,23 @@ fun DrugScreen(
 
 @Composable
 private fun DrugBar(title: String?, onBack: () -> Unit) {
-    Surface(color = Brand) {
-        Row(
-            modifier =
-                Modifier.statusBarsPadding()
-                    .heightIn(min = 56.dp)
-                    .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Назад",
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-            if (title != null) {
-                Text(
-                    text = title,
-                    modifier = Modifier.weight(1f),
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    maxLines = 1,
-                )
-            }
+    ScreenBar {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Назад",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        if (title != null) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                color = Color.White,
+                fontSize = 20.sp,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -136,11 +133,17 @@ private fun DrugBody(drug: Drug) {
             )
             if (drug.source.isNotEmpty()) {
                 val context = LocalContext.current
-                IconButton(onClick = { openUrl(context, drug.source) }) {
+                Box(
+                    modifier =
+                        Modifier.background(Brand, RoundedCornerShape(4.dp))
+                            .clickable { openUrl(context, drug.source) }
+                            .padding(8.dp),
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Link,
                         contentDescription = "Источник",
-                        tint = MaterialTheme.colorScheme.onBackground,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -183,16 +186,46 @@ private fun Gallery(names: List<String>) {
         return
     }
     val pagerState = rememberPagerState { names.size }
-    HorizontalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxWidth().height(300.dp),
-    ) { page ->
-        GalleryFrame(names[page])
+    val frameSizes = remember { mutableStateMapOf<String, Pair<Int, Int>>() }
+    BoxWithConstraints(Modifier.fillMaxWidth().height(300.dp)) {
+        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            val name = names[page]
+            GalleryFrame(name) { width, height -> frameSizes[name] = width to height }
+        }
+        if (names.size > 1) {
+            val frame = frameSizes[names[pagerState.currentPage]]
+            val density = LocalDensity.current
+            val lift =
+                if (frame != null) {
+                    val boxWidth = with(density) { maxWidth.toPx() }
+                    val boxHeight = with(density) { maxHeight.toPx() }
+                    val scale = min(boxWidth / frame.first, boxHeight / frame.second)
+                    val letterbox = (boxHeight - frame.second * scale) / 2f
+                    with(density) { letterbox.toDp() }
+                } else {
+                    0.dp
+                }
+            Row(
+                modifier =
+                    Modifier.align(Alignment.BottomCenter)
+                        .offset(y = -(lift + 12.dp))
+                        .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .semantics { contentDescription = "Кадр ${pagerState.currentPage + 1} из ${names.size}" },
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                repeat(names.size) { index ->
+                    val alpha = if (index == pagerState.currentPage) 1f else 0.45f
+                    Box(Modifier.size(6.dp).background(Color.White.copy(alpha = alpha), CircleShape))
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun GalleryFrame(name: String) {
+private fun GalleryFrame(name: String, onSize: (Int, Int) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     var image by remember(name) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
     LaunchedEffect(name) {
@@ -206,6 +239,7 @@ private fun GalleryFrame(name: String) {
             }
         if (bitmap != null) {
             image = bitmap.asImageBitmap()
+            onSize(bitmap.width, bitmap.height)
         }
     }
     val frame = image
@@ -234,7 +268,7 @@ private fun MnnBlock(mnn: String, cochraneUrl: String, pubmedUrl: String) {
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
         )
-        Row(Modifier.padding(top = 8.dp)) {
+        Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             MnnButton("Cochrane") { openUrl(context, cochraneUrl) }
             MnnButton("Pubmed") { openUrl(context, pubmedUrl) }
         }
@@ -243,15 +277,15 @@ private fun MnnBlock(mnn: String, cochraneUrl: String, pubmedUrl: String) {
 
 @Composable
 private fun MnnButton(label: String, onClick: () -> Unit) {
-    val link = LocalLinkColor.current
-    Box(
+    Text(
+        text = label,
         modifier =
-            Modifier.border(1.dp, link)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Text(text = label, color = link, fontWeight = FontWeight.Bold)
-    }
+            Modifier.clickable(onClick = onClick)
+                .background(Brand, RoundedCornerShape(4.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+    )
 }
 
 @SuppressLint("SetJavaScriptEnabled")

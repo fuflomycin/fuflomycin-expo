@@ -169,6 +169,8 @@ internal fun drug(
     section: String = "РСП / Фуфломицин",
     label: String = "orange",
     mnn: String? = null,
+    source: String = "https://example.test",
+    gallery: List<String> = emptyList(),
     contents: String = "<p>Вердикт про Кагоцел в HTML.</p>",
 ): Drug {
     return Drug(
@@ -177,9 +179,9 @@ internal fun drug(
         other = other,
         section = section,
         label = label,
-        source = "https://example.test",
+        source = source,
         contents = contents,
-        gallery = emptyList(),
+        gallery = gallery,
         mnn = mnn,
     )
 }

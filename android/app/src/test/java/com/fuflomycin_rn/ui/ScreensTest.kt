@@ -1,7 +1,9 @@
 package com.fuflomycin_rn.ui
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -44,7 +46,9 @@ class ScreensTest {
 
         rule.onNodeWithText("Арбидол").assertIsDisplayed()
         rule.onNodeWithText("Арпетол").assertIsDisplayed()
+        rule.onNodeWithText("Препаратов: 1").assertIsDisplayed()
         rule.onNodeWithContentDescription("Препарат").performTextInput("нет-такого")
+        rule.onNodeWithText("Препаратов: 0").assertIsDisplayed()
         rule.onNodeWithText("В списке такого нет.").assertIsDisplayed()
         rule.onNodeWithContentDescription("О справочнике").performClick()
         assertEquals(1, opened)
@@ -72,7 +76,49 @@ class ScreensTest {
         rule.onNodeWithText("МНН: umifenovir").assertIsDisplayed()
         rule.onNodeWithText("Cochrane").assertIsDisplayed()
         rule.onNodeWithText("Pubmed").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Источник").assertIsDisplayed()
         rule.onNodeWithText("РСП / Фуфломицин").assertIsDisplayed()
+    }
+
+    @Test
+    fun missingSourceHidesTheButton() {
+        rule.setContent {
+            FuflomycinTheme {
+                DrugScreen(drug = drug(id = "arbidol", title = "Арбидол", source = ""), notice = null, onBack = {})
+            }
+        }
+
+        rule.onAllNodesWithContentDescription("Источник").assertCountEquals(0)
+    }
+
+    @Test
+    fun galleryDotsMarkTheCurrentFrame() {
+        rule.setContent {
+            FuflomycinTheme {
+                DrugScreen(
+                    drug = drug(id = "arbidol", title = "Арбидол", gallery = listOf("a.png", "b.png")),
+                    notice = null,
+                    onBack = {},
+                )
+            }
+        }
+
+        rule.onNodeWithContentDescription("Кадр 1 из 2").assertIsDisplayed()
+    }
+
+    @Test
+    fun singleFrameHidesGalleryDots() {
+        rule.setContent {
+            FuflomycinTheme {
+                DrugScreen(
+                    drug = drug(id = "arbidol", title = "Арбидол", gallery = listOf("a.png")),
+                    notice = null,
+                    onBack = {},
+                )
+            }
+        }
+
+        rule.onAllNodesWithContentDescription("Кадр 1 из 1").assertCountEquals(0)
     }
 
     @Test
