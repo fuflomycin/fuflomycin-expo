@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Version code and closed-testing publish for the Play Android Publisher API.
+"""Version code and open-testing publish for the Play Android Publisher API.
 
-Track id alpha is closed testing. The release status is completed.
+Track id beta is open testing. The release status is completed.
 versionCode is the highest code already on Play plus one.
 """
 
@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 
 PACKAGE = "com.fuflomycin_rn"
-TRACK = "alpha"
+TRACK = "beta"
 NOTE_LANGUAGE = "ru-RU"
 NOTE_LIMIT = 500
 PLAY_UPLOAD_SHA1 = "E7:A4:59:31:8C:F5:DC:14:F1:B2:92:E0:0A:8D:21:C1:05:7A:6F:8E"
@@ -56,7 +56,7 @@ def self_check() -> None:
     assert release_note("Hello\nbody", "abcdef1234567890") == "Hello"
     assert release_note("   \n", "abcdef1234567890") == "abcdef1"
     assert len(release_note("я" * 600, "abc")) == NOTE_LIMIT
-    print("play-closed-track self-check ok")
+    print("play-open-track self-check ok")
 
 
 def b64url(data: bytes) -> str:
@@ -319,7 +319,7 @@ def cmd_publish() -> None:
             f"{API}/applications/{PACKAGE}/edits/{edit_id}/tracks/{TRACK}",
             track,
         )
-        fail_unless_ok(status, raw, "update closed-testing track")
+        fail_unless_ok(status, raw, "update open-testing track")
         status, _, raw = api(
             token,
             "POST",
@@ -328,7 +328,7 @@ def cmd_publish() -> None:
         )
         fail_unless_ok(status, raw, "commit edit")
         committed = True
-        print(f"rolled out {name} ({code}) to closed testing")
+        print(f"rolled out {name} ({code}) to open testing")
     finally:
         if not committed:
             delete_edit(token, edit_id)
@@ -348,7 +348,7 @@ def main() -> None:
         check_cert(Path(os.environ["AAB_PATH"]))
     else:
         raise SystemExit(
-            "usage: play-closed-track.py self-check|version-code|note|publish|check-cert"
+            "usage: play-open-track.py self-check|version-code|note|publish|check-cert"
         )
 
 

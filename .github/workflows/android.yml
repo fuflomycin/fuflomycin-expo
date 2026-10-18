@@ -1,5 +1,5 @@
 # Push to a branch other than main: signed release APK artifact and public prerelease.
-# Push to main: signed AAB, published to Play closed testing (track alpha).
+# Push to main: signed AAB, published to Play open testing (track beta).
 
 name: Android
 
@@ -87,7 +87,7 @@ jobs:
             echo "prerelease $tag already exists"
             exit 0
           fi
-          python3 scripts/play-closed-track.py note > "$RUNNER_TEMP/apk-notes.txt"
+          python3 scripts/play-open-track.py note > "$RUNNER_TEMP/apk-notes.txt"
           gh release create "$tag" \
             "${{ steps.apk.outputs.file }}" \
             --repo "$GITHUB_REPOSITORY" \
@@ -97,12 +97,12 @@ jobs:
             --prerelease
 
   aab:
-    name: Closed testing AAB
+    name: Open testing AAB
     if: github.repository == 'fuflomycin/fuflomycin-expo' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: play-closed
+    environment: play-open
     concurrency:
-      group: play-closed
+      group: play-open
       cancel-in-progress: false
     steps:
       - name: Checkout
@@ -127,7 +127,7 @@ jobs:
         run: npm test
 
       - name: Check Play version script
-        run: python3 scripts/play-closed-track.py self-check
+        run: python3 scripts/play-open-track.py self-check
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -156,7 +156,7 @@ jobs:
         env:
           PLAY_SERVICE_ACCOUNT_FILE: ${{ runner.temp }}/play-service-account.json
         run: |
-          code=$(python3 scripts/play-closed-track.py version-code)
+          code=$(python3 scripts/play-open-track.py version-code)
           echo "code=$code" >> "$GITHUB_OUTPUT"
 
       - name: Bundle release
@@ -166,7 +166,7 @@ jobs:
       - name: Check upload certificate
         env:
           AAB_PATH: android/app/build/outputs/bundle/release/app-release.aab
-        run: python3 scripts/play-closed-track.py check-cert
+        run: python3 scripts/play-open-track.py check-cert
 
       - name: Name the AAB
         id: aab
@@ -187,11 +187,11 @@ jobs:
       - name: Release notes
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: python3 scripts/play-closed-track.py note > "$RUNNER_TEMP/release-notes.txt"
+        run: python3 scripts/play-open-track.py note > "$RUNNER_TEMP/release-notes.txt"
 
-      - name: Publish to closed testing
+      - name: Publish to open testing
         env:
           AAB_PATH: ${{ steps.aab.outputs.file }}
           RELEASE_NOTES_FILE: ${{ runner.temp }}/release-notes.txt
           PLAY_SERVICE_ACCOUNT_FILE: ${{ runner.temp }}/play-service-account.json
-        run: python3 scripts/play-closed-track.py publish
+        run: python3 scripts/play-open-track.py publish

@@ -188,7 +188,7 @@ TOTAL_STAGES=4
 EXPECTED_EMAIL="fuflomycin@fuflomycin-android.iam.gserviceaccount.com"
 REPO="fuflomycin/fuflomycin-expo"
 
-banner "Play closed testing account"
+banner "Play open testing account"
 
 stage "Google Play Android Developer API"
 say "В проекте fuflomycin-android должен быть включён Google Play Android Developer API."
@@ -211,7 +211,7 @@ if [[ "$SERVICE_ACCOUNT_EMAIL" != "$EXPECTED_EMAIL" ]]; then
 fi
 write_env SERVICE_ACCOUNT_EMAIL "$SERVICE_ACCOUNT_EMAIL"
 
-stage "JSON-ключ в окружение play-closed"
+stage "JSON-ключ в окружение play-open"
 say "Ключ скачивается один раз. В git и в общий секрет репозитория он не попадает."
 open_url "https://console.cloud.google.com/iam-admin/serviceaccounts?project=fuflomycin-android"
 step "Открой $EXPECTED_EMAIL."
@@ -235,21 +235,21 @@ if email != expected:
     raise SystemExit(f"в ключе {email}, ожидался {expected}")
 PY
 write_env PLAY_KEY_PATH "$PLAY_KEY_PATH"
-if ! confirm "Записать этот JSON в секрет окружения play-closed"; then
-  SKIPPED+=("PLAY_SERVICE_ACCOUNT_JSON (environment play-closed)")
+if ! confirm "Записать этот JSON в секрет окружения play-open"; then
+  SKIPPED+=("PLAY_SERVICE_ACCOUNT_JSON (environment play-open)")
   warn "секрет окружения не записан"
 else
-  if gh secret set PLAY_SERVICE_ACCOUNT_JSON --repo "$REPO" --env play-closed < "$PLAY_KEY_PATH"; then
+  if gh secret set PLAY_SERVICE_ACCOUNT_JSON --repo "$REPO" --env play-open < "$PLAY_KEY_PATH"; then
     WRITTEN_SECRET+=("PLAY_SERVICE_ACCOUNT_JSON")
     printf '  %s✓ set%s environment secret %s\n' "$GREEN" "$RESET" "PLAY_SERVICE_ACCOUNT_JSON"
   else
-    SKIPPED+=("PLAY_SERVICE_ACCOUNT_JSON (environment play-closed)")
+    SKIPPED+=("PLAY_SERVICE_ACCOUNT_JSON (environment play-open)")
     warn "не удалось записать секрет окружения"
   fi
 fi
 
 stage "Приглашение в Play Console"
-say "Право одно: Release apps to testing tracks. В прод этим аккаунтом выпуск закрыт."
+say "Право одно: Release apps to testing tracks. В прод этим аккаунтом выпускать нельзя."
 say "Подпись взята из справки Play Console и может быть на языке аккаунта Google."
 open_url "https://play.google.com/console/users-and-permissions"
 step "Invite new users."

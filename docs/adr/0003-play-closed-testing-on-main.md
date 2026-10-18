@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0005
 ---
 
 # Закрытое тестирование при пуше в main
